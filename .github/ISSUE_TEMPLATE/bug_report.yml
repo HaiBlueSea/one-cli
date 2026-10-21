@@ -1,0 +1,27 @@
+name: Bug report / 问题反馈
+description: Report a reproducible problem without private data.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include keys, pairing links or QR codes, cookies, real terminal content, or local configuration. / 请勿附密钥、配对链接和二维码、Cookie、真实终端内容或本地配置。"
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment / 环境
+      description: macOS, chip, One Cli version, relevant CLI and its version.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce / 复现步骤
+      description: Use fictional paths and accounts.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior / 预期与实际结果
+    validations:
+      required: true

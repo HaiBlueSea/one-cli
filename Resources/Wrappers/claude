@@ -1,0 +1,23 @@
+#!/bin/sh
+# Finds the real Claude binary and runs it unchanged.
+set -euo pipefail
+
+WRAPPER_DIR="${AIE_WRAPPER_BIN:-$(CDPATH= cd -- "$(dirname "$0")" && pwd)}"
+REAL=""
+OLD_IFS=$IFS
+IFS=:
+for dir in $PATH; do
+  [ "$dir" = "$WRAPPER_DIR" ] && continue
+  if [ -n "$dir" ] && [ -x "$dir/claude" ]; then
+    REAL="$dir/claude"
+    break
+  fi
+done
+IFS=$OLD_IFS
+
+if [ -z "$REAL" ]; then
+  echo "aie-claude-wrapper: claude not found on PATH" >&2
+  exit 127
+fi
+
+exec "$REAL" "$@"

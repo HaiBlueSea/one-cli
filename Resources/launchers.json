@@ -1,0 +1,19 @@
+{
+  "launchers": {
+    "codex": "codex",
+    "codex1": "codex",
+    "codex2": "codex",
+    "codexR": "codex",
+    "kimi": "kimi",
+    "kimi1": "kimi",
+    "kimi2": "kimi",
+    "claude": "claude",
+    "claude1": "claude",
+    "claude2": "claude",
+    "cursor": "cursor",
+    "cursor1": "cursor",
+    "agent": "cursor",
+    "agent1": "cursor",
+    "cursor-agent": "cursor"
+  }
+}

@@ -1,0 +1,31 @@
+#!/bin/sh
+# Preserve the native daemon; observe only this TUI's local protocol connection.
+set -euo pipefail
+
+WRAPPER_DIR="${AIE_WRAPPER_BIN:-$(CDPATH= cd -- "$(dirname "$0")" && pwd)}"
+REAL=""
+OLD_IFS=$IFS
+IFS=:
+for dir in $PATH; do
+  [ "$dir" = "$WRAPPER_DIR" ] && continue
+  if [ -n "$dir" ] && [ -x "$dir/codex" ]; then
+    REAL="$dir/codex"
+    break
+  fi
+done
+IFS=$OLD_IFS
+
+if [ -z "$REAL" ]; then
+  echo "aie-codex-wrapper: codex not found on PATH" >&2
+  exit 127
+fi
+
+if [ -n "${AIE_HELPER:-}" ] && [ -x "$AIE_HELPER" ] && [ -n "${AIE_LAUNCH_ID:-}" ]; then
+  # Shell functions have applied their launch-local CODEX_HOME by this point.
+  "$AIE_HELPER" --kind codexLaunch >/dev/null 2>&1 || true
+fi
+
+if [ "${AIE_NATIVE_BRIDGE_VALIDATION:-0}" = "1" ] && [ -n "${AIE_HELPER:-}" ] && [ -x "$AIE_HELPER" ] && [ -n "${AIE_LAUNCH_ID:-}" ]; then
+  exec "$AIE_HELPER" --observe-native-codex "$REAL" "$@"
+fi
+exec "$REAL" "$@"
