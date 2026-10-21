@@ -21,6 +21,7 @@ private struct SidebarPalette {
 
 struct SessionSidebar: View {
     @ObservedObject var coordinator: SessionCoordinator
+    @ObservedObject private var localization = L10n.shared
     @ObservedObject private var appearance: TerminalAppearanceStore
     private var palette: SidebarPalette { SidebarPalette(theme: appearance.value.theme) }
     init(coordinator: SessionCoordinator) {
@@ -42,7 +43,7 @@ struct SessionSidebar: View {
                     Text("One Cli")
                         .font(.system(size: 28, weight: .semibold))
                         .foregroundStyle(palette.title)
-                    Text("All agents in one.")
+                    Text(L10n.text("所有 Agent，尽在一处。"))
                         .font(.system(size: 12))
                         .foregroundStyle(palette.subtitle)
                 }
@@ -51,9 +52,10 @@ struct SessionSidebar: View {
             .padding(.horizontal, 4)
             .padding(.top, 6)
             HStack(spacing: 8) {
-                Text("当前任务")
+                Text(L10n.text("当前任务"))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(palette.header)
+                    .fixedSize()
                 Text("\(coordinator.sessions.count)")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(palette.subtitle)
@@ -92,6 +94,7 @@ struct SessionSidebar: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(palette.background)
         .environment(\.terminalTheme, appearance.value.theme)
+        .environment(\.locale, Locale(identifier: localization.language.rawValue))
         .focusable(false)
     }
 }
@@ -167,6 +170,7 @@ private struct DirectoryGroupNode: View {
 private struct SessionTreeRow: View {
     @Environment(\.terminalTheme) private var theme
     private var palette: SidebarPalette { SidebarPalette(theme: theme) }
+    @ObservedObject private var localization = L10n.shared
     @ObservedObject var session: TerminalSession
     let selected: Bool
     let isLast: Bool
@@ -220,7 +224,7 @@ private struct SessionTreeRow: View {
         .buttonStyle(.plain)
         .focusable(false)
         .contextMenu {
-            Button("关闭此终端", role: .destructive, action: onClose)
+            Button(L10n.text("关闭此终端"), role: .destructive, action: onClose)
         }
     }
 }
@@ -286,15 +290,16 @@ private struct WorkingSpinner: View {
 }
 
 private struct SessionStatus: View {
+    @ObservedObject private var localization = L10n.shared
     @Environment(\.terminalTheme) private var theme
     let state: String
 
     private var label: String? {
         switch state {
-        case "working": "Running"
-        case "idle": "Ready"
-        case "needsInput": "Waiting"
-        case "unknown": "Unknown"
+        case "working": L10n.text("运行中")
+        case "idle": L10n.text("就绪")
+        case "needsInput": L10n.text("等待输入")
+        case "unknown": L10n.text("状态未知")
         default: nil
         }
     }
@@ -337,6 +342,7 @@ private struct SessionGlyph: View {
             } else {
                 Image(systemName: "terminal")
                     .font(.system(size: 15, weight: .medium))
+                    .accessibilityLabel(L10n.text("终端"))
             }
         }
         .foregroundStyle(agentType == nil ? Color(nsColor: theme.accent) : SidebarPalette(theme: theme).title)

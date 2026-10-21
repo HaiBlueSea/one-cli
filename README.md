@@ -70,7 +70,9 @@ Closing a window or quitting preserves the layout. Reopening starts new shells; 
 | Kimi Code | Observation hooks. |
 | Cursor | Terminal use is supported; status stays unknown when observation hooks are unavailable. |
 
-`Running` means working; `Ready` means idle. Unsupported, disconnected or unverified states stay unknown. Status integration depends on the installed CLI version and is not a promise of compatibility with every release.
+Starting with [v0.1.1](https://github.com/HaiBlueSea/one-cli/releases/tag/v0.1.1), **Settings → Interface Language** offers Chinese (default) and English. Menus, buttons, status labels and messages update immediately and save automatically; remote pages follow on their next session-list refresh. Commands, paths, terminal output, shortcut actions and existing sessions are preserved. See the [changelog](CHANGELOG.md) for version changes.
+
+In English, `Running` means working and `Ready` means idle; Chinese displays the corresponding localized labels. Unsupported, disconnected or unverified states stay unknown. Status integration depends on the installed CLI version and is not a promise of compatibility with every release.
 
 For **each Codex configuration**, merge the following into the existing `[tui]` section of its `config.toml`, then restart Codex:
 

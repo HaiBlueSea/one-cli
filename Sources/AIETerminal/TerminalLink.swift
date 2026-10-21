@@ -42,9 +42,9 @@ final class AppTerminalView: LocalProcessTerminalView {
 
     override func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
         guard let url = TerminalLink.resolve(link, directory: linkDirectory) else {
-            onLinkFailure?("无法打开链接：文件不存在或链接不受支持。\(link)")
+            onLinkFailure?(L10n.text("无法打开链接：文件不存在或链接不受支持。%@", link))
             return
         }
-        if !linkOpener(url) { onLinkFailure?("未能打开链接，请检查默认打开应用。\(link)") }
+        if !linkOpener(url) { onLinkFailure?(L10n.text("未能打开链接，请检查默认打开应用。%@", link)) }
     }
 }

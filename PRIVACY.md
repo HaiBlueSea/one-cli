@@ -2,7 +2,7 @@
 
 ## On your Mac
 
-One Cli saves layout, working directories and appearance in `~/Library/Application Support/AITerminal/`; development builds use `AITerminalDev/`. Integration files, helpers, sockets and diagnostic records may also be created in the app’s support directories. Terminal content exists in memory during use. Layout restore starts new shells and never replays tasks or input.
+One Cli saves layout, working directories, appearance and the interface language in `~/Library/Application Support/AITerminal/`; development builds use `AITerminalDev/`. The remote page receives the selected language when it opens or pairs, and with authorized session-list refreshes. Integration files, helpers, sockets and diagnostic records may also be created in the app’s support directories. Terminal content exists in memory during use. Layout restore starts new shells and never replays tasks or input.
 
 The app uses locally installed CLIs and their own authentication. Agent integration may read configuration and session metadata, add observation hooks, and create app-managed integration directories. CLI-side sessions, credentials and network traffic remain subject to each CLI’s behavior and provider policies. Hook payload filtering does not make arbitrary terminal output safe to publish.
 
@@ -16,7 +16,7 @@ The app has no project-operated analytics backend. This is not a claim that the 
 
 ## 本地数据
 
-One Cli 在 `~/Library/Application Support/AITerminal/` 保存目录、布局和外观；开发版使用 `AITerminalDev/`。应用支持目录还可能包含接入文件、helper、socket 和诊断记录。终端运行时在内存中保留内容；恢复布局只创建新 Shell，不重放任务或输入。
+One Cli 在 `~/Library/Application Support/AITerminal/` 保存目录、布局、外观和界面语言；开发版使用 `AITerminalDev/`。远程页面在打开、配对及授权后的会话列表刷新时接收所选语言。应用支持目录还可能包含接入文件、helper、socket 和诊断记录。终端运行时在内存中保留内容；恢复布局只创建新 Shell，不重放任务或输入。
 
 应用使用本机 CLI 及其登录。Agent 接入可能读取配置和会话元数据、追加观察 Hook、创建应用管理的接入目录。CLI 自身的会话、凭据和联网行为仍受各工具及服务商规则影响；Hook 过滤不代表真实终端输出可以公开。
 

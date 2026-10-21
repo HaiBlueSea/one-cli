@@ -139,7 +139,16 @@ private final class Helper: @unchecked Sendable {
             }
             if let name = staticName(request.path) {
                 let file = URL(fileURLWithPath: root).appendingPathComponent(name)
-                let body = try Data(contentsOf: file)
+                var body = try Data(contentsOf: file)
+                if name == "index.html" {
+                    guard ipcSlot.wait(timeout: .now() + 8) == .success else { throw RemoteError.limited }
+                    defer { ipcSlot.signal() }
+                    try writeJSON(["v": 1, "type": "language"])
+                    let reply = try readJSON()
+                    let language = reply["language"] as? String == "en" ? "en" : "zh-CN"
+                    body = Data(String(decoding: body, as: UTF8.self)
+                        .replacingOccurrences(of: "<html lang=\"zh-CN\">", with: "<html lang=\"\(language)\">").utf8)
+                }
                 let type = name.hasSuffix(".js") ? "text/javascript; charset=utf-8"
                     : name.hasSuffix(".css") ? "text/css; charset=utf-8"
                     : "text/html; charset=utf-8"

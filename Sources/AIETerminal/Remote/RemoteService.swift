@@ -379,7 +379,7 @@ final class RemoteService: ObservableObject {
     }
 
     fileprivate func sessionPayload() -> [String: Any] {
-        ["sessions": coordinator?.remoteSessions().map { $0.json() } ?? []]
+        ["sessions": coordinator?.remoteSessions().map { $0.json() } ?? [], "language": L10n.shared.language.rawValue]
     }
 
     fileprivate func screenPayload(sessionID: String, since: UInt64) -> [String: Any] {
@@ -558,13 +558,18 @@ private final class IPCServer: @unchecked Sendable {
 
     private func handle(_ message: [String: Any]) -> [String: Any] {
         switch message["type"] as? String ?? "" {
+        case "language":
+            return onMain { _ in ["language": L10n.shared.language.rawValue] }
         case "pair":
+            var reply: [String: Any]
             switch authority.redeem(challenge: message["challenge"] as? String ?? "") {
             case .success(let payload):
-                return payload
+                reply = payload
             case .failure(let error):
-                return ["status": "error", "error": error.rawValue]
+                reply = ["status": "error", "error": error.rawValue]
             }
+            reply["language"] = onMain { _ in ["language": L10n.shared.language.rawValue] }["language"]
+            return reply
         case "sessions":
             guard authority.authorize(token: message["token"] as? String ?? "") else {
                 return ["error": "unauthorized"]

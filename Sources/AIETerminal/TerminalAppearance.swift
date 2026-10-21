@@ -115,10 +115,11 @@ struct TerminalAppearance: Codable, Equatable {
     var preferColorOutput = true
     var thinStrokes = true
     var theme: TerminalTheme = .catppuccinMocha
+    var language: AppLanguage = .chinese
 
     init() {}
 
-    enum CodingKeys: String, CodingKey { case fontSize, fontFamily, lineSpacing, preferColorOutput, thinStrokes, theme }
+    enum CodingKeys: String, CodingKey { case fontSize, fontFamily, lineSpacing, preferColorOutput, thinStrokes, theme, language }
 
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -129,6 +130,7 @@ struct TerminalAppearance: Codable, Equatable {
         preferColorOutput = try values.decodeIfPresent(Bool.self, forKey: .preferColorOutput) ?? true
         thinStrokes = try values.decodeIfPresent(Bool.self, forKey: .thinStrokes) ?? true
         theme = try values.decodeIfPresent(TerminalTheme.self, forKey: .theme) ?? .catppuccinMocha
+        language = (try? values.decode(AppLanguage.self, forKey: .language)) ?? .chinese
     }
 
     func sanitized() -> TerminalAppearance {
@@ -149,6 +151,7 @@ final class TerminalAppearanceStore: ObservableObject {
         self.url = url
         _ = TerminalFontCatalog.registrationFailures
         value = ((try? Data(contentsOf: url)).flatMap { try? JSONDecoder().decode(TerminalAppearance.self, from: $0) } ?? TerminalAppearance()).sanitized()
+        L10n.shared.language = value.language
     }
     func update(_ edit: (inout TerminalAppearance) -> Void) {
         var next = value
@@ -156,6 +159,7 @@ final class TerminalAppearanceStore: ObservableObject {
         next = next.sanitized()
         guard next != value else { return }
         value = next
+        if L10n.shared.language != next.language { L10n.shared.language = next.language }
         do {
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONEncoder().encode(next).write(to: url, options: .atomic)
@@ -185,31 +189,44 @@ extension EnvironmentValues {
 
 @MainActor
 final class AppearanceWindowController: NSWindowController {
+    private var languageSink: AnyCancellable?
+
     init(store: TerminalAppearanceStore) {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 620, height: 650), styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        window.title = "设置"
+        window.title = L10n.text("设置")
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: AppearanceSettingsView(store: store))
         window.center()
         super.init(window: window)
+        languageSink = L10n.shared.$language.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
+            self?.window?.title = L10n.text("设置")
+        }
     }
     @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
 }
 
 private struct AppearanceSettingsView: View {
     @ObservedObject var store: TerminalAppearanceStore
+    @ObservedObject private var localization = L10n.shared
     var body: some View {
         ScrollView {
         VStack(alignment: .leading, spacing: 22) {
             HStack(spacing: 14) {
                 if let image = NSImage(named: "AppIcon") { Image(nsImage: image).resizable().frame(width: 52, height: 52) }
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("终端外观").font(.system(size: 22, weight: .semibold))
-                    Text("字体、行距和主题立即生效，并自动保存。").font(.system(size: 12)).foregroundStyle(.secondary)
+                    Text(L10n.text("终端外观")).font(.system(size: 22, weight: .semibold))
+                    Text(L10n.text("字体、行距和主题立即生效，并自动保存。")).font(.system(size: 12)).foregroundStyle(.secondary)
                 }
             }
+            VStack(alignment: .leading, spacing: 7) {
+                Picker(L10n.text("界面语言"), selection: Binding(get: { store.value.language }, set: { v in store.update { $0.language = v } })) {
+                    Text("中文").tag(AppLanguage.chinese)
+                    Text("English").tag(AppLanguage.english)
+                }.frame(width: 320)
+                Text(L10n.text("语言立即生效，远程页面跟随此设置。")).font(.system(size: 12)).foregroundStyle(.secondary)
+            }
             HStack(spacing: 8) {
-                Text("快速选择").font(.system(size: 12)).foregroundStyle(.secondary)
+                Text(L10n.text("快速选择")).font(.system(size: 12)).foregroundStyle(.secondary)
                 ForEach(["Hack", "JetBrains Mono", "Fira Code"], id: \.self) { family in
                     Button(family) { store.update { $0.fontFamily = family; $0.fontSize = 13; $0.lineSpacing = 1.1 } }
                         .controlSize(.small)
@@ -217,27 +234,27 @@ private struct AppearanceSettingsView: View {
             }
             Grid(alignment: .leading, horizontalSpacing: 25, verticalSpacing: 18) {
                 GridRow {
-                    Text("字体")
-                    Picker("字体", selection: Binding(get: { store.value.fontFamily }, set: { v in store.update { $0.fontFamily = v } })) {
+                    Text(L10n.text("字体"))
+                    Picker(L10n.text("字体"), selection: Binding(get: { store.value.fontFamily }, set: { v in store.update { $0.fontFamily = v } })) {
                         ForEach(TerminalFontCatalog.families, id: \.self) { family in
                             Text(family).font(.custom(TerminalFontCatalog.font(family: family, size: 13).fontName, size: 13)).tag(family)
                         }
                     }.labelsHidden().frame(width: 210)
                 }
                 GridRow {
-                    Text("笔画")
-                    Toggle("细笔画（保留粗体强调）", isOn: Binding(get: { store.value.thinStrokes }, set: { v in store.update { $0.thinStrokes = v } }))
+                    Text(L10n.text("笔画"))
+                    Toggle(L10n.text("细笔画（保留粗体强调）"), isOn: Binding(get: { store.value.thinStrokes }, set: { v in store.update { $0.thinStrokes = v } }))
                 }
                 GridRow {
-                    Text("行距")
+                    Text(L10n.text("行距"))
                     HStack(spacing: 12) {
                         Slider(value: Binding(get: { store.value.lineSpacing }, set: { v in store.update { $0.lineSpacing = v } }), in: 1.0...1.5, step: 0.05)
-                            .frame(width: 160).accessibilityLabel("终端行距")
+                            .frame(width: 160).accessibilityLabel(L10n.text("终端行距"))
                         Text(String(format: "%.2f×", store.value.lineSpacing)).monospacedDigit().frame(width: 48, alignment: .leading)
                     }
                 }
                 GridRow {
-                    Text("字号")
+                    Text(L10n.text("字号"))
                     HStack {
                         Stepper(value: Binding(get: { store.value.fontSize }, set: { v in store.update { $0.fontSize = v } }), in: 9...32, step: 1) {
                             Text("\(Int(store.value.fontSize)) pt").monospacedDigit().frame(width: 50, alignment: .leading)
@@ -246,25 +263,25 @@ private struct AppearanceSettingsView: View {
                     }
                 }
                 GridRow {
-                    Text("主题")
-                    Picker("主题", selection: Binding(get: { store.value.theme }, set: { v in store.update { $0.theme = v } })) {
+                    Text(L10n.text("主题"))
+                    Picker(L10n.text("主题"), selection: Binding(get: { store.value.theme }, set: { v in store.update { $0.theme = v } })) {
                         ForEach(TerminalTheme.allCases) { Text($0.rawValue).tag($0) }
                     }.labelsHidden().frame(width: 210)
                 }
                 GridRow {
-                    Text("命令颜色")
+                    Text(L10n.text("命令颜色"))
                     VStack(alignment: .leading, spacing: 5) {
-                        Toggle("启用彩色输出默认值", isOn: Binding(get: { store.value.preferColorOutput }, set: { v in store.update { $0.preferColorOutput = v } }))
-                        Text("新建终端生效；具体颜色由命令决定。").font(.system(size: 11)).foregroundStyle(.secondary)
+                        Toggle(L10n.text("启用彩色输出默认值"), isOn: Binding(get: { store.value.preferColorOutput }, set: { v in store.update { $0.preferColorOutput = v } }))
+                        Text(L10n.text("新建终端生效；具体颜色由命令决定。")).font(.system(size: 11)).foregroundStyle(.secondary)
                     }
                 }
             }
             VStack(alignment: .leading, spacing: 9) {
-                Text("字体与配色预览").font(.system(size: 10, weight: .semibold)).opacity(0.5)
+                Text(L10n.text("字体与配色预览")).font(.system(size: 10, weight: .semibold)).opacity(0.5)
                 Text("~/Projects/AI Terminal").foregroundStyle(Color(nsColor: store.value.theme.accent))
-                Text("❯ codex  --model gpt\n中文输入 · Hello, terminal!\n0O 1Il  {} []  => !=  ~/Projects")
+                Text("❯ codex  --model gpt\n" + L10n.text("中文输入 · Hello, terminal!") + "\n0O 1Il  {} []  => !=  ~/Projects")
                     .lineSpacing(store.font.pointSize * (store.value.lineSpacing - 1))
-                HStack(spacing: 18) { Text("Regular"); Text("Bold").bold(); Text("Italic").italic() }
+                HStack(spacing: 18) { Text(L10n.text("常规")); Text(L10n.text("粗体")).bold(); Text(L10n.text("斜体")).italic() }
                 HStack(spacing: 6) { ForEach(Array(store.value.theme.ansi.prefix(8).enumerated()), id: \.offset) { _, rgb in Capsule().fill(Color(nsColor: NSColor(rgb: rgb))).frame(width: 26, height: 5) } }
             }
             .font(.custom(store.font.fontName, size: store.value.fontSize))
@@ -272,11 +289,16 @@ private struct AppearanceSettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading).padding(18)
             .background(Color(nsColor: store.value.theme.background), in: RoundedRectangle(cornerRadius: 12))
             HStack {
-                if let error = store.saveError { Text(error).foregroundStyle(.red).font(.caption) }
+                if let error = store.saveError { Text(L10n.text(error)).foregroundStyle(.red).font(.caption) }
                 Spacer()
-                Button("恢复默认") { store.update { $0 = TerminalAppearance() } }
+                Button(L10n.text("恢复默认")) { store.update { value in
+                    let language = value.language
+                    value = TerminalAppearance()
+                    value.language = language
+                } }
             }
         }.padding(28).frame(width: 620)
         }.frame(width: 620)
+        .environment(\.locale, Locale(identifier: localization.language.rawValue))
     }
 }

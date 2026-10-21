@@ -5,54 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="referrer" content="no-referrer">
   <meta name="theme-color" content="#000000">
-  <title>One Cli Remote</title>
+  <title>One Cli 远程</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <main id="home">
     <header>
-      <h1>终端</h1>
-      <p id="hint">扫码后在 Mac 上确认配对。授权后先只读，输入需请求控制。</p>
+      <h1 data-i18n="终端">终端</h1>
+      <p id="hint" data-i18n="扫码后在 Mac 上确认配对。授权后先只读，输入需请求控制。">扫码后在 Mac 上确认配对。授权后先只读，输入需请求控制。</p>
     </header>
     <section id="pair"></section>
     <section id="list" hidden></section>
   </main>
   <section id="screen" hidden>
     <div id="toolbar">
-      <button id="back" class="round" type="button" aria-label="返回">
+      <button id="back" class="round" type="button" aria-label="返回" data-i18n-label="返回">
         <svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div id="heading">
         <strong id="screenTitle"></strong>
-        <span id="subtitle"><span id="mode">只读</span><span id="screenName"></span></span>
+        <span id="subtitle"><span id="mode" data-i18n="只读">只读</span><span id="screenName"></span></span>
       </div>
       <div id="tools">
         <button id="preserveLayout" class="pill layout-toggle" type="button" aria-pressed="false" aria-label="阅读，切换到原样">阅读</button>
-        <button id="copy" class="round" type="button" aria-label="复制屏幕">
+        <button id="copy" class="round" type="button" aria-label="复制屏幕" data-i18n-label="复制屏幕">
           <svg viewBox="0 0 24 24" width="18" height="18"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
         </button>
-        <button id="release" class="pill" type="button">交还</button>
+        <button id="release" data-i18n="交还" class="pill" type="button">交还</button>
       </div>
     </div>
     <div id="term"></div>
     <footer>
       <p id="ack"></p>
-      <button id="request" type="button">请求控制</button>
+      <button id="request" data-i18n="请求控制" type="button">请求控制</button>
       <div id="composer">
         <div id="keys">
-          <button type="button" data-key="Escape">Esc</button>
-          <button type="button" data-key="Tab">Tab</button>
-          <button type="button" class="danger" data-key="c" data-mod="4">Ctrl+C</button>
-          <button type="button" data-key="ArrowLeft">←</button>
-          <button type="button" data-key="ArrowDown">↓</button>
-          <button type="button" data-key="ArrowUp">↑</button>
-          <button type="button" data-key="ArrowRight">→</button>
-          <button type="button" data-key="Backspace">⌫</button>
+          <button type="button" data-key="Escape" aria-label="退出键" data-i18n-label="退出键">Esc</button>
+          <button type="button" data-key="Tab" aria-label="制表键" data-i18n-label="制表键">Tab</button>
+          <button type="button" class="danger" data-key="c" aria-label="中断命令" data-i18n-label="中断命令" data-mod="4">Ctrl+C</button>
+          <button type="button" data-key="ArrowLeft" aria-label="左方向键" data-i18n-label="左方向键">←</button>
+          <button type="button" data-key="ArrowDown" aria-label="下方向键" data-i18n-label="下方向键">↓</button>
+          <button type="button" data-key="ArrowUp" aria-label="上方向键" data-i18n-label="上方向键">↑</button>
+          <button type="button" data-key="ArrowRight" aria-label="右方向键" data-i18n-label="右方向键">→</button>
+          <button type="button" data-key="Backspace" aria-label="退格" data-i18n-label="退格">⌫</button>
         </div>
-        <button id="confirmPaste" type="button" hidden>确认粘贴多行</button>
+        <button id="confirmPaste" data-i18n="确认粘贴多行" type="button" hidden>确认粘贴多行</button>
         <div id="inputRow">
           <textarea id="draft" rows="1" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="输入命令…"></textarea>
-          <button id="sendEnter" type="button" aria-label="发送并回车">
+          <button id="sendEnter" type="button" aria-label="发送并回车" data-i18n-label="发送并回车">
             <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>

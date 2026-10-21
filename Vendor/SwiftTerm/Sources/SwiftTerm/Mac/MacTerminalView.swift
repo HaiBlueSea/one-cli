@@ -292,6 +292,10 @@ open class TerminalView: NSView, NSUserInterfaceValidations, TerminalDelegate {
 
     var accessibility: AccessibilityService = AccessibilityService()
     var search: SearchService!
+    /// Localize terminal-owned controls without changing terminal contents or key encoding.
+    public var localizeUI: (String) -> String = { $0 } {
+        didSet { findBar?.localize(localizeUI) }
+    }
     private var findBar: TerminalFindBarView?
     private var findBarTerm: String = ""
     private var findBarOptions: SearchOptions = SearchOptions()
@@ -3345,6 +3349,7 @@ open class TerminalView: NSView, NSUserInterfaceValidations, TerminalDelegate {
             return findBar
         }
         let bar = TerminalFindBarView()
+        bar.localize(localizeUI)
         bar.translatesAutoresizingMaskIntoConstraints = false
         bar.isHidden = true
         bar.onSearchChanged = { [weak self] term in

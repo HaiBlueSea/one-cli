@@ -107,6 +107,18 @@ final class TerminalFindBarView: NSVisualEffectView, NSSearchFieldDelegate {
         ])
     }
 
+    func localize(_ text: (String) -> String) {
+        searchField.placeholderString = text("Find")
+        searchField.setAccessibilityLabel(text("Find"))
+        for (button, key) in [(previousButton, "Previous"), (nextButton, "Next"),
+                              (closeButton, "Close"), (caseSensitiveButton, "Case Sensitive"),
+                              (regexButton, "Regex"), (wholeWordButton, "Whole Word")] {
+            button.toolTip = text(key)
+            button.setAccessibilityLabel(text(key))
+        }
+        wholeWordButton.title = text("Word")
+    }
+
     private func configureButton(_ button: NSButton, symbol: String, tooltip: String) {
         button.translatesAutoresizingMaskIntoConstraints = false
         button.bezelStyle = .texturedRounded

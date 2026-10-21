@@ -33,7 +33,7 @@ final class TerminalSession: ObservableObject, Identifiable {
     }
 
     var displayName: String {
-        title
+        title == "Terminal" ? L10n.text("终端") : title
     }
 
     var subtitle: String {
@@ -41,15 +41,15 @@ final class TerminalSession: ObservableObject, Identifiable {
         let clock = String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
         switch agentState {
         case "unknown":
-            return "未知状态 · \(clock)"
+            return L10n.text("未知状态") + " · \(clock)"
         case "idle":
-            return "等待中 · \(clock)"
+            return L10n.text("等待中") + " · \(clock)"
         case "working":
-            return "工作中 · \(clock)"
+            return L10n.text("工作中") + " · \(clock)"
         case "needsInput":
-            return "等待输入 · \(clock)"
+            return L10n.text("等待输入") + " · \(clock)"
         default:
-            return "新会话 · \(clock)"
+            return L10n.text("新会话") + " · \(clock)"
         }
     }
 
@@ -138,7 +138,7 @@ final class SessionCoordinator: ObservableObject {
         remote = RemoteService(identity: identity, coordinator: nil)
         remote.bind(coordinator: self)
         if !launcherMap.invalidMappings.isEmpty {
-            note = "launchers.json 含未知类型：\(launcherMap.invalidMappings.joined(separator: ", "))。"
+            note = L10n.text("launchers.json 含未知类型：%@。", launcherMap.invalidMappings.joined(separator: ", "))
         }
         switch self.snapshotStore.load() {
         case .missing:
@@ -147,10 +147,10 @@ final class SessionCoordinator: ObservableObject {
             applyLoadedSnapshot(snapshot)
         case .corrupt:
             freezeWrites = true
-            note = "布局文件损坏，已保留副本并暂停布局保存；请恢复文件后重启。"
+            note = L10n.text("布局文件损坏，已保留副本并暂停布局保存；请恢复文件后重启。")
         case .unsupportedSchema(let version):
             freezeWrites = true
-            note = "布局版本 \(version) 不受支持，未覆盖原文件。"
+            note = L10n.text("布局版本 %@ 不受支持，未覆盖原文件。", String(version))
         }
         let eventSlots = DispatchSemaphore(value: 128)
         try server.start { [weak self] envelope in
@@ -177,7 +177,7 @@ final class SessionCoordinator: ObservableObject {
         windowHeight = sanitized.0.windowHeight
         sidebarWidth = sanitized.0.sidebarWidth == 300 ? 200 : sanitized.0.sidebarWidth
         if sanitized.fellBack {
-            note = "有目录不可访问，已回退到 Home。"
+            note = L10n.text("有目录不可访问，已回退到 Home。")
         }
     }
 
@@ -213,7 +213,7 @@ final class SessionCoordinator: ObservableObject {
     func createSession(cwd: String? = nil, id: String? = nil, select: Bool = true, persistNow: Bool = true) -> TerminalSession {
         let resolved = LayoutPath.resolveForRestore(cwd ?? selectedCWD, home: homePath)
         if resolved.fellBack {
-            note = "目录不可访问，已回退到 Home。"
+            note = L10n.text("目录不可访问，已回退到 Home。")
         }
         let host = TerminalHost(identity: identity, startDirectory: resolved.cwd, sessionID: id ?? UUID().uuidString, ptyGeneration: nextPTYGeneration)
         nextPTYGeneration += 1
@@ -230,10 +230,10 @@ final class SessionCoordinator: ObservableObject {
                 guard let self, let host, self.isBatchClosing != true,
                       let session = self.sessions.first(where: { $0.id == sessionID }), session.host === host else { return }
                 if session.didBecomeReady {
-                    self.note = "会话已退出。"
+                    self.note = L10n.text("会话已退出。")
                     self.removeSession(id: sessionID, deleteSlot: true)
                 } else {
-                    self.note = "会话未能启动。若系统询问文稿权限，请点允许后再开这个目录。"
+                    self.note = L10n.text("会话未能启动。若系统询问文稿权限，请点允许后再开这个目录。")
                 }
             }
         }
@@ -286,7 +286,7 @@ final class SessionCoordinator: ObservableObject {
         let id = UUID()
         cleanupTasks[id] = Task { [weak self] in
             let result = await host.closeAndReap()
-            if result?.timedOut == true { self?.note = "部分受管进程尚未退出。" }
+            if result?.timedOut == true { self?.note = L10n.text("部分受管进程尚未退出。") }
             self?.cleanupTasks[id] = nil
         }
     }
@@ -445,7 +445,7 @@ final class SessionCoordinator: ObservableObject {
         guard persistDirty, !freezeWrites else { return }
         guard layoutRevision < UInt64.max else {
             freezeWrites = true
-            note = "布局修订号已达到上限，未覆盖原文件。"
+            note = L10n.text("布局修订号已达到上限，未覆盖原文件。")
             return
         }
         persistDirty = false
@@ -466,12 +466,12 @@ final class SessionCoordinator: ObservableObject {
         do {
             try snapshotStore.save(snapshot)
         } catch SnapshotSaveError.staleRevision {
-            note = "忽略过期布局写入。"
+            note = L10n.text("忽略过期布局写入。")
         } catch {
             do {
                 try snapshotStore.save(snapshot)
             } catch {
-                note = "布局未能写入，已保留内存中的最后布局。"
+                note = L10n.text("布局未能写入，已保留内存中的最后布局。")
             }
         }
     }
@@ -556,9 +556,9 @@ final class SessionCoordinator: ObservableObject {
                 rescheduleExpiry()
                 if type == "codex" {
                     session.nativeCodexHome = envelope.payload["codexHome"]?.stringValue
-                    note = "Codex 状态需要在当前配置的 [tui] 下设置 terminal_title = [\"session-id\"]，无法唯一识别时保持未知。"
+                    note = L10n.text("Codex 状态需要在当前配置的 [tui] 下设置 terminal_title = [\"session-id\"]，无法唯一识别时保持未知。")
                 } else if type == "cursor" {
-                    note = "Cursor 未上报状态事件，侧栏保持未知。"
+                    note = L10n.text("Cursor 未上报状态事件，侧栏保持未知。")
                 }
             } else {
                 session.launchID = nil

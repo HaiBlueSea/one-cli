@@ -26,6 +26,7 @@ final class TerminalHost: NSObject, LocalProcessTerminalViewDelegate {
         self.sessionID = sessionID
         self.ptyGeneration = ptyGeneration
         self.view = AppTerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 480), font: .monospacedSystemFont(ofSize: 12, weight: .regular), options: options)
+        self.view.localizeUI = L10n.terminalText
         super.init()
         view.linkDirectory = startDirectory
         view.processDelegate = self

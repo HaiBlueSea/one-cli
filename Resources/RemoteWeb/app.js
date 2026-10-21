@@ -46,6 +46,124 @@
   let lastScreenSignature = null;
   let refreshPending = false;
 
+  let language = document.documentElement.lang === "en" ? "en" : "zh-CN";
+  const englishText = {
+  "One Cli 远程": "One Cli Remote",
+  "终端": "Terminal",
+  "扫码后在 Mac 上确认配对。授权后先只读，输入需请求控制。": "Scan and confirm pairing on your Mac. Access starts read-only; request control to type.",
+  "返回": "Back",
+  "只读": "Read-only",
+  "复制屏幕": "Copy Screen",
+  "交还": "Release",
+  "请求控制": "Request Control",
+  "确认粘贴多行": "Confirm Multiline Paste",
+  "输入命令…": "Enter a command…",
+  "发送并回车": "Send and Enter",
+  "主目录": "Home",
+  "运行中": "Running",
+  "就绪": "Ready",
+  "等待输入": "Waiting for Input",
+  "状态未知": "Unknown",
+  "{count} 个会话": "{count} sessions",
+  "控制中": "Controlling",
+  "请在 Mac 确认配对，确认码 {code}": "Confirm pairing on your Mac. Code: {code}",
+  "已授权。先只读，需要输入时再请求控制。": "Authorized. Read-only until you request control.",
+  "等待配对。": "Waiting for pairing.",
+  "原样": "Original",
+  "阅读": "Read",
+  "原样，切换到阅读": "Original layout; switch to reading",
+  "阅读，切换到原样": "Reading layout; switch to original",
+  "未授权。请重新扫码。": "Unauthorized. Scan the QR code again.",
+  "已授权 · 手机自动换行，不改变 Mac 终端": "Authorized · Text wraps on your phone; Mac terminal unchanged",
+  "连接中断，主机状态未知。": "Disconnected. Host status is unknown.",
+  "正在读取终端…": "Loading terminal…",
+  "授权已失效。": "Authorization expired.",
+  "无法读取该终端": "Could not read this terminal",
+  "已获得控制权，不会自动重发未确认输入。": "Control granted. Unconfirmed input will not be resent automatically.",
+  "上一笔输入尚未完成。": "The previous input is still pending.",
+  "未能取得控制权。": "Could not obtain control.",
+  "已交还控制。": "Control released.",
+  "控制已失效，请重新请求。": "Control expired. Request it again.",
+  "当前只读，请先请求控制。": "Read-only. Request control first.",
+  "已写入 {bytes} 字节。": "Wrote {bytes} bytes.",
+  "部分写入 {bytes} 字节，未补发。": "Partially wrote {bytes} bytes; no retry.",
+  "结果未知，请核查终端。不会自动重发。": "Result unknown. Check the terminal. Input will not be resent automatically.",
+  "已拒绝：{reason}": "Rejected: {reason}",
+  "含控制字符，已拒绝。": "Rejected: control characters detected.",
+  "多行需要确认粘贴。": "Confirm multiline paste first.",
+  "已确认粘贴，再次发送即可。": "Paste confirmed. Send again to submit.",
+  "配对失败，请在 Mac 重新开启远程。": "Pairing failed. Re-enable remote on your Mac.",
+  "连不上主机。": "Could not connect to the host.",
+  "控制权已失效": "Control expired",
+  "请求超时": "Request timed out",
+  "请求内容不匹配": "Request content mismatch",
+  "没有控制权": "No control",
+  "输入超过限制": "Input limit exceeded",
+  "输入尚未完成": "Input still pending",
+  "缺少请求编号": "Missing request ID",
+  "终端不存在": "Terminal not found",
+  "输入无效": "Invalid input",
+  "终端未运行": "Terminal is not running",
+  "写入失败": "Write failed",
+  "请求被拒绝": "Request rejected",
+  "中断命令": "Interrupt command",
+  "左方向键": "Left Arrow",
+  "下方向键": "Down Arrow",
+  "上方向键": "Up Arrow",
+  "右方向键": "Right Arrow",
+  "退格": "Backspace",
+  "退出键": "Escape",
+  "制表键": "Tab"
+};
+  function t(key, parameters) {
+    const template = language === "en" ? englishText[key] || key : key;
+    return template.replace(/\{(\w+)\}/g, function (_, name) { return text(parameters && parameters[name]); });
+  }
+
+  function setMessage(node, key, parameters) {
+    node.dataset.message = key;
+    node.dataset.parameters = JSON.stringify(parameters || {});
+    node.textContent = t(key, parameters);
+  }
+
+  function sessionName(item) {
+    return item.title === "Terminal" ? t("终端") : text(item.title);
+  }
+
+  const reasonKeys = {
+    expired: "控制权已失效", timeout: "请求超时", mismatch: "请求内容不匹配",
+    "no-control": "没有控制权", limited: "输入超过限制", busy: "输入尚未完成",
+    "missing-id": "缺少请求编号", missing: "终端不存在", invalid: "输入无效",
+    "not-running": "终端未运行", "write-failed": "写入失败"
+  };
+
+  let pairStatus = "";
+  let pairCode = "";
+  let screenMessage = "";
+
+  function applyLanguage(value) {
+    if (value !== "en" && value !== "zh-CN") return;
+    language = value;
+    document.documentElement.lang = language;
+    document.title = t("One Cli 远程");
+    document.querySelectorAll("[data-i18n]").forEach(function (node) {
+      node.textContent = t(node.dataset.i18n);
+    });
+    document.querySelectorAll("[data-i18n-label]").forEach(function (node) {
+      node.setAttribute("aria-label", t(node.dataset.i18nLabel));
+    });
+    document.querySelectorAll("[data-message]").forEach(function (node) {
+      const parameters = JSON.parse(node.dataset.parameters || "{}");
+      if (parameters.reasonKey) parameters.reason = t(parameters.reasonKey);
+      node.textContent = t(node.dataset.message, parameters);
+    });
+    draft.placeholder = t("输入命令…");
+    updateLayoutToggle();
+    if (pairStatus && !pair.hidden) showPair(pairStatus, pairCode);
+    if (screenMessage) termHost.textContent = t(screenMessage);
+    if (latestSessions.length) renderSessions(latestSessions);
+  }
+
   function apiFetch(path, options, controller) {
     controller = controller || new AbortController();
     const timeout = setTimeout(function () { controller.abort(); }, 10000);
@@ -92,18 +210,18 @@
   }
 
   function setMode(label) {
-    mode.textContent = label;
+    setMessage(mode, label);
     document.body.classList.toggle("controlling", !!leaseId);
   }
 
   function setHint(message, ok) {
-    hint.textContent = message;
+    setMessage(hint, message);
     hint.className = ok ? "ok" : "";
     if (!ok && !screen.hidden) setAck(message);
   }
 
   function groupName(cwd) {
-    if (/^\/Users\/[^/]+\/?$/.test(cwd) || cwd === "~") return "主目录";
+    if (/^\/Users\/[^/]+\/?$/.test(cwd) || cwd === "~") return t("主目录");
     const parts = cwd.split("/").filter(Boolean);
     return parts.length ? parts[parts.length - 1] : "/";
   }
@@ -123,7 +241,7 @@
   function renderSessions(sessions) {
     const signature = JSON.stringify([sessions.map(function (item) {
       return [item.id, item.cwd, item.title, item.state, item.ptyGeneration];
-    }), selected, leaseId]);
+    }), selected, leaseId, language]);
     if (signature === renderedSessions) return;
     renderedSessions = signature;
     const groups = [];
@@ -152,7 +270,7 @@
       name.appendChild(strong);
       name.appendChild(small);
       head.appendChild(name);
-      head.appendChild(span("group-count", group.items.length + " 个会话"));
+      head.appendChild(span("group-count", t("{count} 个会话", { count: group.items.length })));
       box.appendChild(head);
       const cards = document.createElement("div");
       cards.className = "cards";
@@ -163,10 +281,10 @@
         button.className = (item.id === selected ? "active" : "") + (controlled ? " held" : "");
         const state = text(item.state);
         const dot = span("dot " + (stateLabels[state] ? state : "none"), "");
-        if (stateLabels[state]) dot.title = stateLabels[state];
+        if (stateLabels[state]) dot.title = t(stateLabels[state]);
         button.appendChild(dot);
-        button.appendChild(span("name", text(item.title)));
-        button.appendChild(span("tag", controlled ? "控制中" : "只读"));
+        button.appendChild(span("name", sessionName(item)));
+        button.appendChild(span("tag", t(controlled ? "控制中" : "只读")));
         const chev = span("chev", "");
         chev.innerHTML = chevronIcon;
         button.appendChild(chev);
@@ -174,7 +292,7 @@
         cards.appendChild(button);
         if (item.id === selected) {
           screenTitle.textContent = groupName(group.cwd);
-          screenName.textContent = text(item.title);
+          screenName.textContent = sessionName(item);
         }
       });
       box.appendChild(cards);
@@ -182,17 +300,19 @@
     });
   }
 
-  function setAck(message) {
-    ack.textContent = message;
+  function setAck(message, parameters) {
+    setMessage(ack, message, parameters);
   }
 
   function showPair(status, code) {
+    pairStatus = status;
+    pairCode = code;
     pair.hidden = false;
     pair.textContent = "";
     const line = document.createElement("p");
     line.textContent = status === "pending"
-      ? "请在 Mac 确认配对，确认码 " + text(code)
-      : status === "ready" ? "已授权。先只读，需要输入时再请求控制。" : "等待配对。";
+      ? t("请在 Mac 确认配对，确认码 {code}", { code: code })
+      : status === "ready" ? t("已授权。先只读，需要输入时再请求控制。") : t("等待配对。");
     pair.appendChild(line);
   }
 
@@ -258,8 +378,8 @@
   function updateLayoutToggle() {
     const toggle = document.getElementById("preserveLayout");
     toggle.setAttribute("aria-pressed", String(preserveLayout));
-    toggle.textContent = preserveLayout ? "原样" : "阅读";
-    toggle.setAttribute("aria-label", preserveLayout ? "原样，切换到阅读" : "阅读，切换到原样");
+    toggle.textContent = t(preserveLayout ? "原样" : "阅读");
+    toggle.setAttribute("aria-label", t(preserveLayout ? "原样，切换到阅读" : "阅读，切换到原样"));
   }
 
   function compactText(content, value) {
@@ -335,6 +455,7 @@
   }
 
   function draw(data) {
+    screenMessage = "";
     screenLines = data.lines || [];
     lastText = screenLines.join("\n");
     preserveLayout = layoutPreferences.get(selected) || false;
@@ -362,6 +483,7 @@
       return JSON.parse(response.body);
     }).then(function (data) {
       if (!data || !data.sessions) return;
+      if (data.language && data.language !== language) applyLanguage(data.language);
       failStreak = 0;
       authorized = true;
       pair.hidden = true;
@@ -390,15 +512,16 @@
     lastText = "";
     renderedScreen = "";
     followTail = true;
-    termHost.textContent = "正在读取终端…";
+    screenMessage = "正在读取终端…";
+    termHost.textContent = t(screenMessage);
     termHost.setAttribute("aria-busy", "true");
     termHost.scrollTop = 0;
     selected = id;
     preserveLayout = layoutPreferences.get(id) || false;
     updateLayoutToggle();
     const item = latestSessions.find(function (session) { return session.id === id; });
-    screenTitle.textContent = item ? groupName(text(item.cwd)) : "终端";
-    screenName.textContent = item ? text(item.title) : "";
+    screenTitle.textContent = item ? groupName(text(item.cwd)) : t("终端");
+    screenName.textContent = item ? sessionName(item) : "";
     revision = "0";
     lastScreenSignature = null;
     home.hidden = true;
@@ -445,7 +568,8 @@
       if (!isCurrent()) return;
       if (!data || data.error) {
         if (data && data.error) {
-          termHost.textContent = "无法读取该终端";
+          screenMessage = "无法读取该终端";
+          termHost.textContent = t(screenMessage);
           termHost.setAttribute("aria-busy", "false");
           renderedScreen = "";
         }
@@ -573,16 +697,17 @@
     }).then(function (response) { return JSON.parse(response.body); }).then(function (data) {
       const status = text(data && data.status);
       if (status === "written") {
-        setAck("已写入 " + text(data.bytes) + " 字节。");
+        setAck("已写入 {bytes} 字节。", { bytes: data.bytes });
         if ((payload.kind === "text" || payload.kind === "paste") &&
             payload.sessionId === selected && submittedGeneration === screenGeneration &&
             submittedRevision === draftRevision && draft.value === payload.text && !composing) {
           draft.value = "";
         }
-      } else if (status === "partial") setAck("部分写入 " + text(data.bytes) + " 字节，未补发。");
+      } else if (status === "partial") setAck("部分写入 {bytes} 字节，未补发。", { bytes: data.bytes });
       else if (status === "unknown") setAck("结果未知，请核查终端。不会自动重发。");
       else {
-        setAck("已拒绝：" + text(data && data.reason));
+        const reasonKey = reasonKeys[data && data.reason] || "请求被拒绝";
+        setAck("已拒绝：{reason}", { reason: t(reasonKey), reasonKey: reasonKey });
         if (data && data.reason === "no-control") {
           leaseId = "";
           setMode("只读");
@@ -709,6 +834,7 @@
     }).then(function (response) {
       return JSON.parse(response.body);
     }).then(function (data) {
+      if (data.language && data.language !== language) applyLanguage(data.language);
       showPair(data.status, data.confirmCode);
       if (data.status === "ready") {
         authorized = true;
@@ -722,6 +848,8 @@
       setHint("连不上主机。");
     });
   }
+
+  applyLanguage(language);
 
   if (challenge) {
     redeem();

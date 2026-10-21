@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 
 @MainActor
 final class RemotePanelController: NSWindowController, NSWindowDelegate {
@@ -7,6 +8,7 @@ final class RemotePanelController: NSWindowController, NSWindowDelegate {
     private let url = NSTextField(labelWithString: "")
     private let code = NSTextField(labelWithString: "")
     private let qr = NSImageView()
+    private let hint = NSTextField(wrappingLabelWithString: "")
     private let copyLink = NSButton(title: "复制链接", target: nil, action: nil)
     private let openLocal = NSButton(title: "在本机打开", target: nil, action: nil)
     private let toggle = NSButton(title: "开启远程", target: nil, action: nil)
@@ -15,50 +17,52 @@ final class RemotePanelController: NSWindowController, NSWindowDelegate {
     private let revoke = NSButton(title: "撤销", target: nil, action: nil)
     private var copiedUntil = Date.distantPast
     private var timer: Timer?
+    private var languageSink: AnyCancellable?
 
     init(service: RemoteService) {
         self.service = service
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 500),
+            contentRect: NSRect(x: 0, y: 0, width: 580, height: 560),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
-        window.title = "远程"
+        window.title = L10n.text("远程")
         super.init(window: window)
         window.delegate = self
         window.isReleasedWhenClosed = false
         let content = NSView(frame: window.contentView!.bounds)
         content.autoresizingMask = [.width, .height]
-        status.frame = NSRect(x: 20, y: 450, width: 380, height: 24)
-        url.frame = NSRect(x: 20, y: 412, width: 380, height: 36)
+        status.frame = NSRect(x: 20, y: 490, width: 540, height: 54)
+        status.maximumNumberOfLines = 3
+        status.lineBreakMode = .byWordWrapping
+        url.frame = NSRect(x: 20, y: 452, width: 540, height: 36)
         url.isSelectable = true
         url.maximumNumberOfLines = 2
         url.lineBreakMode = .byCharWrapping
         url.font = NSFont.systemFont(ofSize: 11)
-        copyLink.frame = NSRect(x: 20, y: 378, width: 90, height: 28)
+        copyLink.frame = NSRect(x: 20, y: 418, width: 120, height: 28)
         copyLink.target = self
         copyLink.action = #selector(copyPairingURL)
-        openLocal.frame = NSRect(x: 118, y: 378, width: 100, height: 28)
+        openLocal.frame = NSRect(x: 155, y: 418, width: 130, height: 28)
         openLocal.target = self
         openLocal.action = #selector(openPairingURL)
-        code.frame = NSRect(x: 20, y: 348, width: 380, height: 24)
-        qr.frame = NSRect(x: 110, y: 148, width: 200, height: 186)
+        code.frame = NSRect(x: 20, y: 388, width: 540, height: 24)
+        qr.frame = NSRect(x: 190, y: 190, width: 200, height: 186)
         qr.imageScaling = .scaleProportionallyUpOrDown
-        toggle.frame = NSRect(x: 20, y: 110, width: 90, height: 32)
+        toggle.frame = NSRect(x: 20, y: 140, width: 130, height: 32)
         toggle.target = self
         toggle.action = #selector(toggleRemote)
-        confirm.frame = NSRect(x: 118, y: 110, width: 90, height: 32)
+        confirm.frame = NSRect(x: 155, y: 140, width: 130, height: 32)
         confirm.target = self
         confirm.action = #selector(confirmPair)
-        deny.frame = NSRect(x: 216, y: 110, width: 80, height: 32)
+        deny.frame = NSRect(x: 290, y: 140, width: 130, height: 32)
         deny.target = self
         deny.action = #selector(denyPair)
-        revoke.frame = NSRect(x: 304, y: 110, width: 80, height: 32)
+        revoke.frame = NSRect(x: 425, y: 140, width: 130, height: 32)
         revoke.target = self
         revoke.action = #selector(revokeDevice)
-        let hint = NSTextField(wrappingLabelWithString: "开启远程会自动打开临时外网；关闭远程会停隧道。手机扫码配对后，同一浏览器可恢复授权；后台交还控制，回前台可重新请求。")
-        hint.frame = NSRect(x: 20, y: 16, width: 380, height: 80)
+        hint.frame = NSRect(x: 20, y: 16, width: 540, height: 110)
         content.addSubview(status)
         content.addSubview(url)
         content.addSubview(copyLink)
@@ -71,6 +75,9 @@ final class RemotePanelController: NSWindowController, NSWindowDelegate {
         content.addSubview(revoke)
         content.addSubview(hint)
         window.contentView = content
+        languageSink = L10n.shared.$language.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
+            self?.refresh()
+        }
         refresh()
     }
 
@@ -94,12 +101,21 @@ final class RemotePanelController: NSWindowController, NSWindowDelegate {
 
     func refresh() {
         service.applyPendingPublicOrigin()
-        status.stringValue = service.note.isEmpty ? "状态：\(service.status)" : service.note
-        url.stringValue = service.url.isEmpty ? "远程默认关闭" : service.url
-        code.stringValue = service.confirmCode.isEmpty ? "" : "确认码 \(service.confirmCode)"
+        window?.title = L10n.text("远程")
+        let statusText = service.status.hasPrefix("等待确认 ")
+            ? L10n.text("等待确认 %@", String(service.status.dropFirst("等待确认 ".count)))
+            : L10n.text(service.status == "关闭" ? "远程默认关闭" : service.status)
+        status.stringValue = service.note.isEmpty ? L10n.text("状态：%@", statusText) : L10n.text(service.note)
+        url.stringValue = service.url.isEmpty ? L10n.text("远程默认关闭") : service.url
+        code.stringValue = service.confirmCode.isEmpty ? "" : L10n.text("确认码 %@", service.confirmCode)
         qr.image = service.qrImage
-        toggle.title = service.enabled ? "关闭远程" : "开启远程"
-        copyLink.title = Date() < copiedUntil ? "已复制" : "复制链接"
+        toggle.title = L10n.text(service.enabled ? "关闭远程" : "开启远程")
+        copyLink.title = L10n.text(Date() < copiedUntil ? "已复制" : "复制链接")
+        openLocal.title = L10n.text("在本机打开")
+        confirm.title = L10n.text("确认配对")
+        deny.title = L10n.text("拒绝")
+        revoke.title = L10n.text("撤销")
+        hint.stringValue = L10n.text("开启远程会自动打开临时外网；关闭远程会停隧道。手机扫码配对后，同一浏览器可恢复授权；后台交还控制，回前台可重新请求。")
         copyLink.isEnabled = !service.url.isEmpty
         openLocal.isEnabled = URL(string: service.url) != nil
     }

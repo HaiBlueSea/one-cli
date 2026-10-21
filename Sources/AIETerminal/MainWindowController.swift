@@ -78,13 +78,22 @@ final class MainWindowController: NSWindowController {
         coordinator.$selectedID.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
             self?.updateToolbarInformation()
         }.store(in: &sinks)
+        L10n.shared.$language.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
+            self?.updateToolbarInformation()
+            self?.applyTerminalLanguage()
+        }.store(in: &sinks)
         applyAppearance()
         updateToolbarInformation()
     }
 
     private var sinks = Set<AnyCancellable>()
 
+    private func applyTerminalLanguage() {
+        for session in coordinator.sessions { session.host.view.localizeUI = L10n.terminalText }
+    }
+
     private func applyAppearance() {
+        applyTerminalLanguage()
         let store = coordinator.appearance
         NSApp.appearance = NSAppearance(named: store.value.theme.isLight ? .aqua : .darkAqua)
         sidebarHost.appearance = NSApp.appearance
@@ -133,7 +142,7 @@ final class MainWindowController: NSWindowController {
 
     private func configureToolbar() {
         guard let window else { return }
-        sidebarButton.image = NSImage(systemSymbolName: "sidebar.left", accessibilityDescription: "折叠侧栏")
+        sidebarButton.image = NSImage(systemSymbolName: "sidebar.left", accessibilityDescription: L10n.text("折叠侧栏"))
         sidebarButton.isBordered = false
         sidebarButton.refusesFirstResponder = true
         sidebarButton.target = self
@@ -173,9 +182,9 @@ final class MainWindowController: NSWindowController {
         branchLabel.stringValue = selected.flatMap { coordinator.gitBranch(for: $0.cwd) } ?? ""
         branchLabel.isHidden = branchLabel.stringValue.isEmpty
         branchLabel.toolTip = branchLabel.stringValue
-        sessionLabel.stringValue = selected.map { $0.title == "Terminal" ? "Shell" : $0.title } ?? "无会话"
+        sessionLabel.stringValue = selected.map { $0.title == "Terminal" ? L10n.text("命令行") : $0.title } ?? L10n.text("无会话")
         sessionLabel.toolTip = sessionLabel.stringValue
-        let action = sidebarHost.isHidden ? "展开侧栏" : "折叠侧栏"
+        let action = L10n.text(sidebarHost.isHidden ? "展开侧栏" : "折叠侧栏")
         sidebarButton.toolTip = action
         sidebarButton.setAccessibilityLabel(action)
         let information = headerAccessory.view
