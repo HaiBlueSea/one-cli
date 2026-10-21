@@ -7,6 +7,10 @@
   <p><a href="README.md">English</a> · <a href="#开始使用">开始使用</a> · <a href="#源码构建">源码构建</a> · <a href="PRIVACY.md">隐私与数据</a></p>
 </div>
 
+https://github.com/user-attachments/assets/0223f907-79fa-4a1f-a807-c2ec81143094
+
+30 秒真实演示：Claude Code、Codex 与手机远程控制。[下载 1080p 视频](https://github.com/HaiBlueSea/one-cli/releases/download/v0.1.0/One-Cli-Launch-Live-1080p.mp4)。
+
 ![One Cli 在隔离演示目录中的真实运行画面](assets/hero.png)
 
 <sub>应用界面为真实运行截图，使用演示数据；手机端截图来自实际远程后端与浏览器手机视口。</sub>

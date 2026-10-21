@@ -7,6 +7,10 @@
   <p><a href="README.zh-CN.md">简体中文</a> · <a href="#get-started">Get started</a> · <a href="#build-from-source">Build</a> · <a href="PRIVACY.md">Privacy</a></p>
 </div>
 
+https://github.com/user-attachments/assets/0223f907-79fa-4a1f-a807-c2ec81143094
+
+30-second demo: Claude Code, Codex and mobile remote control. [Download 1080p](https://github.com/HaiBlueSea/one-cli/releases/download/v0.1.0/One-Cli-Launch-Live-1080p.mp4).
+
 ![One Cli running with an isolated demo workspace](assets/hero.png)
 
 <sub>Real application capture with demonstration data. Mobile captures use the actual remote backend in a browser’s phone viewport.</sub>
